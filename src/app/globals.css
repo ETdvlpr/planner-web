@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+/*
+ * Tokens. The seed hue is the mobile app's (#3F5B8B) so the two clients read
+ * as one product. Everything else is neutral: this is a tool people stare at
+ * for hours, not a landing page.
+ */
+:root {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #eef0f4;
+  --border: #dfe3ea;
+  --border-strong: #c5cbd6;
+  --fg: #1a1f2b;
+  --fg-muted: #5b6474;
+  --fg-faint: #8b93a3;
+  --accent: #3f5b8b;
+  --accent-hover: #34507e;
+  --accent-soft: #e6ecf6;
+  --accent-fg: #ffffff;
+  --danger: #b3261e;
+  --danger-soft: #fbe9e7;
+  --warn: #8a5a00;
+  --warn-soft: #fff3d6;
+  --ok: #2e6b4f;
+  --ok-soft: #e3f3ea;
+  --violet: #6750a4;
+  --violet-soft: #ede8f7;
+  --ring: rgba(63, 91, 139, 0.35);
+  --shadow: 0 1px 2px rgba(20, 28, 45, 0.06), 0 4px 16px rgba(20, 28, 45, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0f1218;
+    --surface: #171b23;
+    --surface-2: #1f2430;
+    --border: #2a3040;
+    --border-strong: #3a4256;
+    --fg: #e8ebf1;
+    --fg-muted: #a5adbe;
+    --fg-faint: #6f788a;
+    --accent: #8fa8d8;
+    --accent-hover: #a3b8e2;
+    --accent-soft: #24304a;
+    --accent-fg: #0f1218;
+    --danger: #f2b8b5;
+    --danger-soft: #3a1f1e;
+    --warn: #ffcf7a;
+    --warn-soft: #3a2e12;
+    --ok: #95d5b2;
+    --ok-soft: #16302a;
+    --violet: #cfbcff;
+    --violet-soft: #2b2540;
+    --ring: rgba(143, 168, 216, 0.4);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.35);
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --shadow-card: var(--shadow);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+/* Native <dialog> as the modal primitive: no portal, no focus-trap library. */
+dialog::backdrop {
+  background: rgba(10, 14, 22, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+textarea {
+  field-sizing: content;
+}
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 5px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--fg-muted);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+  border: 2px solid var(--bg);
+}
