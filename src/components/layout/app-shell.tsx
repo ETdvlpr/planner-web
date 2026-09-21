@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Building2,
   CalendarClock,
@@ -11,6 +13,7 @@ import {
   FolderKanban,
   Gavel,
   Inbox,
+  LogIn,
   LogOut,
   Menu,
   NotebookPen,
@@ -21,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/auth/auth-provider";
+import { retryPendingAdopt } from "@/auth/guest";
 import { useHotkey, useMe } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 
@@ -73,11 +77,23 @@ const NAV: { heading?: string; items: NavItem[] }[] = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
   // The account row is created server-side on the first `/users/me`; do it
   // as soon as the shell mounts rather than on the first data page.
   useMe();
+
+  // A guest merge that was interrupted between sign-in and adopt is finished
+  // here, on the next load. Nothing pending is the overwhelmingly common case.
+  useEffect(() => {
+    void retryPendingAdopt().then((merged) => {
+      if (!merged) return;
+      queryClient.clear();
+      toast.success("Your guest data is now in your account.");
+    });
+  }, [queryClient]);
 
   // g then <key> is the classic; a bare key is faster and the app has no
   // single-key actions elsewhere that would collide.
@@ -167,6 +183,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="min-w-0 flex-1 pt-12 lg:pt-0 lg:pl-60">
+        {user?.isAnonymous && <GuestBanner />}
         <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
           {children}
         </div>
@@ -175,8 +192,57 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Guests are told where their data lives on every page, not just in
+ * Settings: the session is one cleared browser away from gone, and the fix
+ * — signing in — takes a click.
+ */
+function GuestBanner() {
+  return (
+    <div className="bg-warn-soft text-warn flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-2 text-center text-[13px]">
+      <span>
+        You&rsquo;re using Planner as a guest. Your data is saved to this
+        browser only.
+      </span>
+      <Link href="/sign-in" className="font-medium underline">
+        Sign in to keep it
+      </Link>
+    </div>
+  );
+}
+
 function UserMenu() {
   const { user, signOut } = useAuth();
+  if (user?.isAnonymous) {
+    return (
+      <div className="border-border flex items-center gap-2 border-t p-2">
+        <Link
+          href="/settings"
+          className="hover:bg-surface-2 flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 py-1.5"
+        >
+          <div className="bg-surface-2 flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold">
+            G
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-medium">Guest</p>
+            <p className="text-fg-faint truncate text-[11px]">
+              Sign in to keep your data
+            </p>
+          </div>
+          <Settings className="text-fg-faint h-4 w-4" />
+        </Link>
+        <Link
+          href="/sign-in"
+          className="text-fg-faint hover:bg-surface-2 hover:text-fg rounded-md p-2"
+          aria-label="Sign in"
+          title="Sign in"
+        >
+          <LogIn className="h-4 w-4" />
+        </Link>
+      </div>
+    );
+  }
+
   const initial = (user?.displayName ?? user?.email ?? "?")[0]?.toUpperCase();
   return (
     <div className="border-border flex items-center gap-2 border-t p-2">

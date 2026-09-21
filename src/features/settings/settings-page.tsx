@@ -30,7 +30,10 @@ export function SettingsPage() {
     },
   });
 
+  const guest = user?.isAnonymous ?? false;
+  // A guest has no email to type back; the word will do.
   const emailForConfirm = me.data?.email ?? user?.email ?? "";
+  const confirmWord = guest || !emailForConfirm ? "delete" : emailForConfirm;
 
   return (
     <>
@@ -40,7 +43,23 @@ export function SettingsPage() {
         <Spinner />
       ) : (
         <div className="flex max-w-xl flex-col gap-5">
-          {me.data && (
+          {guest && (
+            <Card className="border-warn/30 p-5 text-sm">
+              <h2 className="mb-1 font-medium">Guest session</h2>
+              <p className="text-fg-muted">
+                Everything you capture is tied to this browser. Clearing site
+                data, or switching devices, loses it. Sign in and it all moves
+                to your account — including on your phone.
+              </p>
+              <div className="mt-3">
+                <Button onClick={() => router.push("/sign-in")}>
+                  Sign in to keep your data
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {me.data && !guest && (
             // Keyed on the server value so a save re-seeds the form.
             <ProfileForm
               key={me.data.updatedAt}
@@ -54,9 +73,11 @@ export function SettingsPage() {
             <dl className="text-fg-muted grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
               <dt>Signed in with</dt>
               <dd>
-                {user?.providerData
-                  .map((p) => p.providerId.replace(".com", ""))
-                  .join(", ") || "email"}
+                {guest
+                  ? "Guest (this browser only)"
+                  : user?.providerData
+                      .map((p) => p.providerId.replace(".com", ""))
+                      .join(", ") || "email"}
               </dd>
               <dt>Member since</dt>
               <dd>{formatDateTime(me.data?.createdAt)}</dd>
@@ -65,23 +86,29 @@ export function SettingsPage() {
               <dt>Web build</dt>
               <dd className="font-mono text-xs">{env.version}</dd>
             </dl>
-            <div className="mt-4 flex gap-2">
-              <Button variant="outline" onClick={() => void signOut()}>
-                Sign out
-              </Button>
-            </div>
+            {/* Signing a guest out is losing the data; the honest control
+                for that is the deletion below. */}
+            {!guest && (
+              <div className="mt-4 flex gap-2">
+                <Button variant="outline" onClick={() => void signOut()}>
+                  Sign out
+                </Button>
+              </div>
+            )}
           </Card>
 
           <Card className="border-danger/30 p-5 text-sm">
-            <h2 className="text-danger mb-1 font-medium">Delete account</h2>
+            <h2 className="text-danger mb-1 font-medium">
+              {guest ? "Delete guest data" : "Delete account"}
+            </h2>
             <p className="text-fg-muted">
-              Erases your sign-in and every organization, project, task,
-              meeting, note and attachment you own — on the server and, on next
-              sync, on your phone. There is no undo.
+              {guest
+                ? "Erases this guest session and every organization, project, task, meeting, note and attachment in it. There is no undo."
+                : "Erases your sign-in and every organization, project, task, meeting, note and attachment you own — on the server and, on next sync, on your phone. There is no undo."}
             </p>
             <div className="mt-3">
               <Button variant="danger" onClick={() => setConfirmErase(true)}>
-                Delete my account…
+                {guest ? "Delete guest data…" : "Delete my account…"}
               </Button>
             </div>
           </Card>
@@ -91,12 +118,12 @@ export function SettingsPage() {
       <Dialog
         open={confirmErase}
         onClose={() => setConfirmErase(false)}
-        title="Delete your account?"
+        title={guest ? "Delete guest data?" : "Delete your account?"}
         size="sm"
       >
         <DialogBody>
           <p className="text-fg-muted text-sm">
-            Type <span className="text-fg font-mono">{emailForConfirm}</span> to
+            Type <span className="text-fg font-mono">{confirmWord}</span> to
             confirm.
           </p>
           <Input
@@ -112,7 +139,7 @@ export function SettingsPage() {
           </Button>
           <Button
             variant="danger"
-            disabled={typed !== emailForConfirm}
+            disabled={typed !== confirmWord}
             loading={erase.isPending}
             onClick={() => erase.mutate()}
           >

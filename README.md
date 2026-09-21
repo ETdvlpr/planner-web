@@ -21,6 +21,7 @@ on a wired connection, local-first buys nothing and costs a replica.
 | Requirements, Decisions, Notes, Activity | Lists, editing, scope filters. Notes autosave. |
 | Weekly review | Planned vs unplanned, per-organization split, overdue, waiting, carried forward. |
 | Settings | Profile, sign-out, account erasure (Firebase + Postgres). |
+| Guests | "Continue without an account" on the sign-in page gives a Firebase anonymous session — full app, data on the server, reachable only from this browser. Signing in later keeps everything: a new credential links in place, an existing account adopts the guest's rows (`src/auth/guest.ts`). Guests are capped at `GUEST_MAX_ATTACHMENTS` uploads. |
 
 Keyboard: `c` capture, `i` inbox, `t` tasks, `o` organizations, `p` projects,
 `m` meetings, `n` notes, `r` review. `⌘↵` saves in any capture box.

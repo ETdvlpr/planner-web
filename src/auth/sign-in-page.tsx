@@ -2,15 +2,19 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
+  type AuthProvider,
 } from "firebase/auth";
 import { toast } from "sonner";
 import { appleProvider, firebaseAuth, googleProvider } from "@/lib/firebase";
+import { keys } from "@/lib/query";
 import { useAuth } from "./auth-provider";
+import { signInAsGuest, upgradeGuest, type UpgradeResult } from "./guest";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 
@@ -26,6 +30,9 @@ function describe(error: unknown): string {
       return "Wrong email or password.";
     case "auth/email-already-in-use":
       return "There is already an account with that email. Sign in instead.";
+    case "auth/credential-already-in-use":
+    case "auth/account-exists-with-different-credential":
+      return "That sign-in already belongs to an account. Sign in with it to merge your guest data.";
     case "auth/weak-password":
       return "Use a password of at least 6 characters.";
     case "auth/invalid-email":
@@ -46,7 +53,12 @@ export function SignInPage() {
   const { user, configError } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
+  const queryClient = useQueryClient();
   const next = params.get("next") ?? "/";
+
+  // A guest lands here to keep their data, not to be sent away: the page
+  // becomes the upgrade form and only redirects once the account is real.
+  const guest = user?.isAnonymous ? user : null;
 
   const [mode, setMode] = useState<Mode>("signIn");
   const [email, setEmail] = useState("");
@@ -55,8 +67,11 @@ export function SignInPage() {
   const disabled = busy !== null || configError !== null;
 
   useEffect(() => {
-    if (user) router.replace(next);
-  }, [user, router, next]);
+    // `busy` is a dependency on purpose: a merge swaps the Firebase user
+    // mid-way, and leaving before the adopt call finishes would show the
+    // existing account's data without the guest's.
+    if (user && !user.isAnonymous && !busy) router.replace(next);
+  }, [user, busy, router, next]);
 
   const run = async (label: string, action: () => Promise<unknown>) => {
     setBusy(label);
@@ -69,6 +84,25 @@ export function SignInPage() {
     }
   };
 
+  const settled = (result: UpgradeResult) => {
+    if (result === "merged") {
+      // Every cached query belonged to the guest; the account is a different
+      // principal with the guest's rows now inside it.
+      queryClient.clear();
+      toast.success("Your guest data is now in your account.");
+    } else {
+      void queryClient.invalidateQueries({ queryKey: keys.me });
+      toast.success("Account saved. Your data is kept.");
+    }
+  };
+
+  const withProvider = (label: string, provider: AuthProvider) =>
+    run(label, async () => {
+      if (guest)
+        settled(await upgradeGuest(guest, { kind: "popup", provider }));
+      else await signInWithPopup(firebaseAuth(), provider);
+    });
+
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (mode === "reset") {
@@ -79,11 +113,22 @@ export function SignInPage() {
       });
       return;
     }
-    void run("email", () =>
-      mode === "signUp"
+    void run("email", async () => {
+      if (guest) {
+        settled(
+          await upgradeGuest(guest, {
+            kind: "email",
+            email,
+            password,
+            create: mode === "signUp",
+          }),
+        );
+        return;
+      }
+      await (mode === "signUp"
         ? createUserWithEmailAndPassword(firebaseAuth(), email, password)
-        : signInWithEmailAndPassword(firebaseAuth(), email, password),
-    );
+        : signInWithEmailAndPassword(firebaseAuth(), email, password));
+    });
   };
 
   return (
@@ -93,9 +138,13 @@ export function SignInPage() {
           <div className="bg-accent text-accent-fg mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-xl text-lg font-bold">
             P
           </div>
-          <h1 className="text-xl font-semibold tracking-tight">Planner</h1>
+          <h1 className="text-xl font-semibold tracking-tight">
+            {guest ? "Keep your data" : "Planner"}
+          </h1>
           <p className="text-fg-muted mt-1 text-sm">
-            Capture in the meeting. Organize at the desk.
+            {guest
+              ? "Sign in or create an account and everything you captured as a guest comes with you."
+              : "Capture in the meeting. Organize at the desk."}
           </p>
         </div>
 
@@ -106,11 +155,7 @@ export function SignInPage() {
               size="lg"
               loading={busy === "google"}
               disabled={disabled}
-              onClick={() =>
-                run("google", () =>
-                  signInWithPopup(firebaseAuth(), googleProvider),
-                )
-              }
+              onClick={() => void withProvider("google", googleProvider)}
             >
               <GoogleMark />
               Continue with Google
@@ -120,11 +165,7 @@ export function SignInPage() {
               size="lg"
               loading={busy === "apple"}
               disabled={disabled}
-              onClick={() =>
-                run("apple", () =>
-                  signInWithPopup(firebaseAuth(), appleProvider),
-                )
-              }
+              onClick={() => void withProvider("apple", appleProvider)}
             >
               <AppleMark />
               Continue with Apple
@@ -205,10 +246,34 @@ export function SignInPage() {
           </div>
         </div>
 
-        <p className="text-fg-faint mt-6 text-center text-xs">
-          Same account as the mobile app. Sign in on either and your data is
-          there.
-        </p>
+        {!guest && (
+          <div className="mt-4 text-center">
+            <Button
+              variant="ghost"
+              loading={busy === "guest"}
+              disabled={disabled}
+              onClick={() => void run("guest", signInAsGuest)}
+            >
+              Continue without an account
+            </Button>
+            <p className="text-fg-faint mt-1 text-xs">
+              Your data stays in this browser until you sign in.
+            </p>
+          </div>
+        )}
+
+        {guest ? (
+          <p className="text-fg-faint mt-6 text-center text-xs">
+            <button className="hover:text-fg" onClick={() => router.push("/")}>
+              ← Not now
+            </button>
+          </p>
+        ) : (
+          <p className="text-fg-faint mt-6 text-center text-xs">
+            Same account as the mobile app. Sign in on either and your data is
+            there.
+          </p>
+        )}
       </div>
     </main>
   );

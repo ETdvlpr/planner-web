@@ -53,6 +53,9 @@ export interface UpdateProfileInput {
 export const users = {
   me: () => http.get<User>("/users/me"),
   update: (input: UpdateProfileInput) => http.patch<User>("/users/me", input),
+  /** Move a guest session's data into this account. See `auth/guest.ts`. */
+  adopt: (input: { sourceToken: string }) =>
+    http.post<{ adoptedRows: number }>("/users/adopt", input),
   deleteAccount: () => http.delete<unknown>("/users/me"),
 };
 

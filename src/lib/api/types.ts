@@ -167,6 +167,8 @@ export interface User {
   email: string | null;
   displayName: string | null;
   photoUrl: string | null;
+  /** A guest session; see `auth/guest.ts`. */
+  anonymous: boolean;
   lastSeenAt: ISODate | null;
   createdAt: ISODate;
   updatedAt: ISODate;
