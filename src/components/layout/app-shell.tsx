@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/auth/auth-provider";
 import { retryPendingAdopt } from "@/auth/guest";
+import { AndroidAppBanner } from "@/components/layout/android-app-banner";
 import { useHotkey, useMe } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 
@@ -184,6 +185,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main className="min-w-0 flex-1 pt-12 lg:pt-0 lg:pl-60">
         {user?.isAnonymous && <GuestBanner />}
+        <AndroidAppBanner />
         <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
           {children}
         </div>

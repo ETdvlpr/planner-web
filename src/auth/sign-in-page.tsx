@@ -17,6 +17,7 @@ import { useAuth } from "./auth-provider";
 import { signInAsGuest, upgradeGuest, type UpgradeResult } from "./guest";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { useAndroidRelease, useIsAndroid } from "@/lib/android-app";
 
 type Mode = "signIn" | "signUp" | "reset";
 
@@ -272,10 +273,26 @@ export function SignInPage() {
           <p className="text-fg-faint mt-6 text-center text-xs">
             Same account as the mobile app. Sign in on either and your data is
             there.
+            <AndroidAppLink />
           </p>
         )}
       </div>
     </main>
+  );
+}
+
+/** On an Android phone, the app is one tap away from the sign-in screen. */
+function AndroidAppLink() {
+  const release = useAndroidRelease();
+  const android = useIsAndroid();
+  if (!android || !release) return null;
+  return (
+    <>
+      {" "}
+      <a href={release.url} className="hover:text-fg underline">
+        Get the Android app
+      </a>
+    </>
   );
 }
 

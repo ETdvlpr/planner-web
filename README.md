@@ -105,6 +105,21 @@ Still to do, in order:
 `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` is set by Vercel and shown in Settings as
 the build id.
 
+## The Android app
+
+The phone app is offered from three places: a dismissible banner in the app
+shell and a link under the sign-in form — both only on Android browsers,
+where the file can actually be installed — and a "Phone app" card in
+Settings, on every device, for sending the link to a phone.
+
+Nothing about the APK lives in this repo. `src/lib/android-app.ts` asks
+GitHub for the latest release of `NEXT_PUBLIC_ANDROID_RELEASES_REPO` (default
+`ETdvlpr/planner-mobile`) and links to its `planner-android.apk` asset via the
+stable `releases/latest/download/…` URL, so publishing a new build
+(`planner-mobile/scripts/release-android.sh`) needs no web deploy. One
+unauthenticated GitHub API call per session, cached for an hour. No release,
+a rate-limited response, or an empty variable all just hide the offer.
+
 ## Layout
 
 ```

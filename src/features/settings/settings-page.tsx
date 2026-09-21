@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { Dialog, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import { Card, PageHeader, Spinner } from "@/components/ui/misc";
+import { MobileAppCard } from "./mobile-app-card";
 
 export function SettingsPage() {
   const { user, signOut } = useAuth();
@@ -96,6 +97,8 @@ export function SettingsPage() {
               </div>
             )}
           </Card>
+
+          <MobileAppCard />
 
           <Card className="border-danger/30 p-5 text-sm">
             <h2 className="text-danger mb-1 font-medium">

@@ -21,6 +21,13 @@ export const env = {
   },
   /** Shown in Settings so a bug report can say which build it came from. */
   version: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
+  /**
+   * GitHub repo whose releases carry the Android APK (see
+   * `planner-mobile/scripts/release-android.sh`). Empty disables every
+   * "get the app" surface.
+   */
+  androidReleasesRepo:
+    process.env.NEXT_PUBLIC_ANDROID_RELEASES_REPO ?? "ETdvlpr/planner-mobile",
 };
 
 export function assertFirebaseConfig(): void {
